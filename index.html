@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LuxTrack — Monthly Expenditure Tracker</title>
+  <style>
+    :root {
+      --dark: #1c1c1c;
+      --gold: #d4af37;
+      --green: #0b3d2e;
+      --light-gold: #f5e6c5;
+      --white: #fff;
+      --soft: #f8f6f0;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    * {margin: 0; padding: 0; box-sizing: border-box;}
+    body {
+      background: linear-gradient(135deg, var(--dark), var(--green));
+      color: var(--white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin: 20px 0;
+      color: var(--gold);
+      letter-spacing: 1px;
+      text-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+    }
+
+    .tracker-container {
+      background: var(--soft);
+      color: var(--dark);
+      border-radius: 16px;
+      padding: 24px;
+      width: 90%;
+      max-width: 550px;
+      box-shadow: 0 6px 25px rgba(0,0,0,0.3);
+    }
+
+    label {
+      font-weight: 600;
+      color: var(--green);
+    }
+
+    input, button, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+    }
+
+    input, select {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    button {
+      background: linear-gradient(90deg, var(--gold), var(--light-gold));
+      color: var(--dark);
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.3s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+    }
+
+    .section { margin-top: 20px; }
+
+    .expenses-list {
+      margin-top: 10px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .expense-item {
+      background: var(--light-gold);
+      color: var(--dark);
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 500;
+    }
+
+    .progress-bar {
+      margin-top: 16px;
+      width: 100%;
+      height: 18px;
+      background: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .progress {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--green), var(--gold));
+      transition: width 0.4s ease-in-out;
+    }
+
+    .summary {
+      margin-top: 14px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .alert {
+      margin-top: 16px;
+      background: #fdd835;
+      color: #2e2e2e;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-align: center;
+      display: none;
+    }
+
+    .off-limit-section {
+      margin-top: 20px;
+      background: #ffe0e0;
+      color: #a00;
+      border-radius: 12px;
+      padding: 12px;
+      display: none;
+    }
+
+    .history-section {
+      margin-top: 20px;
+      background: var(--white);
+      color: var(--dark);
+      padding: 12px;
+      border-radius: 12px;
+      display: none;
+    }
+
+    .history-item {
+      border-bottom: 1px solid #ccc;
+      padding: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>💰Track It</h1>
+  <div class="tracker-container">
+    <div class="section">
+      <label for="currency">Select Currency</label>
+      <select id="currency" onchange="updateCurrencySymbol()">
+        <option value="GHS">🇬🇭 Ghana Cedi (GHS)</option>
+        <option value="USD">🇺🇸 US Dollar (USD)</option>
+        <option value="EUR">🇪🇺 Euro (EUR)</option>
+        <option value="GBP">🇬🇧 British Pound (GBP)</option>
+        <option value="NGN">🇳🇬 Naira (NGN)</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <label for="maxAmount">Set Your Monthly Budget</label>
+      <input type="number" id="maxAmount" placeholder="Enter amount (e.g. 1000)" />
+      <button onclick="setMax()">Set Budget</button>
+    </div>
+
+    <div class="section">
+      <label for="expenseName">Expense Name</label>
+      <input type="text" id="expenseName" placeholder="e.g. Groceries" />
+      <label for="expenseAmount">Amount</label>
+      <input type="number" id="expenseAmount" placeholder="e.g. 200" />
+      <button onclick="addExpense()">Add Expense</button>
+    </div>
+
+    <div class="section">
+      <h3>Expenses for <span id="currentMonth"></span></h3>
+      <div class="expenses-list" id="expenseList"></div>
+    </div>
+    
+      <div class="section">
+      <h3>Summary</h3>
+      <div class="progress-bar">
+        <div class="progress" id="progressBar"></div>
+      </div>
+      <div class="summary" id="summaryText">Total Spent: GHS 0 / Limit: GHS 0</div>
+      <div class="alert" id="alertBox">⚠️ You have reached your budget limit!</div>
+    </div>
+
+    <div class="section off-limit-section" id="offLimitSection">
+      <h3>Off-Limits Expenses</h3>
+      <div id="offLimitList"></div>
+    </div>
+
+  
+
+    <div class="section">
+      <button onclick="toggleHistory()">View Previous Months</button>
+    </div>
+
+    <div class="history-section" id="historySection">
+      <h3>📅 Monthly History</h3>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <script>
+    let data = JSON.parse(localStorage.getItem("luxTrackData")) || {};
+    let currency = "GHS";
+    let symbol = "₵";
+    const currentMonthKey = new Date().toLocaleString("default", { month: "long", year: "numeric" });
+    document.getElementById("currentMonth").textContent = currentMonthKey;
+
+    if (!data[currentMonthKey]) {
+      data[currentMonthKey] = { max: 0, expenses: [], offLimits: [], currency: "GHS", locked: false };
+    }
+
+    function updateCurrencySymbol() {
+      currency = document.getElementById("currency").value;
+      const symbols = { GHS: "₵", USD: "$", EUR: "€", GBP: "£", NGN: "₦" };
+      symbol = symbols[currency] || currency;
+      data[currentMonthKey].currency = currency;
+      saveData();
+      renderExpenses();
+      updateSummary();
+    }
+
+    function setMax() {
+      const monthData = data[currentMonthKey];
+      if (monthData.locked && monthData.max > 0) {
+        alert("Budget for this month is already set. Wait for next month to set a new one.");
+        return;
+      }
+
+      const input = parseFloat(document.getElementById("maxAmount").value);
+      if (input <= 0 || isNaN(input)) {
+        alert("Please enter a valid amount!");
+        return;
+      }
+      monthData.max = input;
+      monthData.locked = true;
+      monthData.expenses = [];
+      monthData.offLimits = [];
+      saveData();
+      renderExpenses();
+      updateSummary();
+      document.getElementById("alertBox").style.display = "none";
+    }
+
+    function addExpense() {
+      const name = document.getElementById("expenseName").value.trim();
+      const amount = parseFloat(document.getElementById("expenseAmount").value);
+      if (!name || isNaN(amount) || amount <= 0) {
+        alert("Please enter valid expense details!");
+        return;
+      }
+
+      const monthData = data[currentMonthKey];
+      const total = monthData.expenses.reduce((sum, exp) => sum + exp.amount, 0);
+      const remaining = monthData.max - total;
+
+      if (remaining <= 0) {
+        // all goes to off-limit
+        monthData.offLimits.push({ name, amount });
+      } else if (amount > remaining) {
+        // split amount: remaining part fits budget, rest goes off-limit
+        monthData.expenses.push({ name: name + " (partial)", amount: remaining });
+        monthData.offLimits.push({ name: name + " (over)", amount: amount - remaining });
+      } else {
+        monthData.expenses.push({ name, amount });
+      }
+
+      saveData();
+      document.getElementById("expenseName").value = "";
+      document.getElementById("expenseAmount").value = "";
+      renderExpenses();
+      updateSummary();
+    }
+
+    function renderExpenses() {
+      const list = document.getElementById("expenseList");
+      const monthData = data[currentMonthKey];
+      list.innerHTML = "";
+      monthData.expenses.forEach(exp => {
+        list.innerHTML += `
+          <div class="expense-item">
+            <span>${exp.name}</span>
+            <span>${symbol} ${exp.amount.toFixed(2)}</span>
+          </div>
+        `;
+      });
+
+      if (monthData.offLimits.length > 0) {
+        document.getElementById("offLimitSection").style.display = "block";
+        renderOffLimits();
+      } else {
+        document.getElementById("offLimitSection").style.display = "none";
+      }
+    }
+
+    function renderOffLimits() {
+      const list = document.getElementById("offLimitList");
+      const monthData = data[currentMonthKey];
+      list.innerHTML = "";
+      monthData.offLimits.forEach(exp => {
+        list.innerHTML += `
+          <div class="expense-item" style="background:#ffb3b3;">
+            <span>${exp.name}</span>
+            <span>${symbol} ${exp.amount.toFixed(2)}</span>
+          </div>
+        `;
+      });
+    }
+
+    function updateSummary() {
+      const monthData = data[currentMonthKey];
+      const total = monthData.expenses.reduce((sum, exp) => sum + exp.amount, 0);
+      const percent = monthData.max > 0 ? Math.min((total / monthData.max) * 100, 100) : 0;
+
+      document.getElementById("progressBar").style.width = percent + "%";
+      document.getElementById("summaryText").innerHTML =
+        `Total Spent: ${symbol} ${total.toFixed(2)} / Limit: ${symbol} ${monthData.max.toFixed(2)}`;
+
+      const alertBox = document.getElementById("alertBox");
+      alertBox.style.display = total >= monthData.max && monthData.max > 0 ? "block" : "none";
+    }
+
+    function toggleHistory() {
+      const section = document.getElementById("historySection");
+      const list = document.getElementById("historyList");
+      section.style.display = section.style.display === "block" ? "none" : "block";
+      list.innerHTML = "";
+
+      Object.keys(data).forEach(month => {
+        if (month !== currentMonthKey) {
+          const m = data[month];
+          const total = m.expenses.reduce((s, e) => s + e.amount, 0);
+          const remaining = (m.max - total).toFixed(2);
+          const symbols = { GHS: "₵", USD: "$", EUR: "€", GBP: "£", NGN: "₦" };
+          const sym = symbols[m.currency] || m.currency;
+          list.innerHTML += `
+            <div class="history-item">
+              <strong>${month}</strong><br>
+              Budget: ${sym}${m.max.toFixed(2)} | Spent: ${sym}${total.toFixed(2)} | Remaining: ${sym}${remaining}
+            </div>
+          `;
+        }
+      });
+    }
+
+    function saveData() {
+      localStorage.setItem("luxTrackData", JSON.stringify(data));
+    }
+
+    renderExpenses();
+    updateSummary();
+  </script>
+</body>
+</html>
